@@ -103,7 +103,14 @@ def main(args):
 
         # reverse img without watermarking
         img_no_w = transform_img(orig_image_no_w_auged).unsqueeze(0).to(text_embeddings.dtype).to(device)
-        image_latents_no_w = pipe.get_image_latents(img_no_w, sample=False)
+        image_latents_no_w = pipe.get_image_latents(img_no_w, sample=False)        
+
+        reversed_latents_no_w = pipe.forward_diffusion(
+            latents=image_latents_no_w,
+            text_embeddings=text_embeddings,
+            guidance_scale=1,
+            num_inference_steps=args.test_num_inference_steps,
+        )
 
         # START CODE
         def optimize_latents(or_latents, or_image, max_epochs, log_var_name):
@@ -153,26 +160,14 @@ def main(args):
                     })
 
             return z.detach()
-
+        
         if args.optimize_latents:
-            image_latents_no_w = optimize_latents(or_latents=image_latents_no_w, or_image=img_no_w, max_epochs=100, log_var_name=f'no_w_{i}_loss')
+            reversed_latents_no_w = optimize_latents(or_latents=reversed_latents_no_w, or_image=img_no_w, max_epochs=100, log_var_name=f'no_w_{i}_loss')
         # END CODE
-
-        reversed_latents_no_w = pipe.forward_diffusion(
-            latents=image_latents_no_w,
-            text_embeddings=text_embeddings,
-            guidance_scale=1,
-            num_inference_steps=args.test_num_inference_steps,
-        )
 
         # reverse img with watermarking
         img_w = transform_img(orig_image_w_auged).unsqueeze(0).to(text_embeddings.dtype).to(device)
         image_latents_w = pipe.get_image_latents(img_w, sample=False)
-
-        # START CODE
-        if args.optimize_latents:
-            image_latents_w = optimize_latents(or_latents=image_latents_w, or_image=img_w, max_epochs=100, log_var_name=f'w_{i}_loss')
-        # END CODE
 
         reversed_latents_w = pipe.forward_diffusion(
             latents=image_latents_w,
@@ -180,6 +175,11 @@ def main(args):
             guidance_scale=1,
             num_inference_steps=args.test_num_inference_steps,
         )
+
+        # START CODE
+        if args.optimize_latents:
+            reversed_latents_w = optimize_latents(or_latents=reversed_latents_w, or_image=img_w, max_epochs=100, log_var_name=f'w_{i}_loss')
+        # END CODE
 
         # eval
         no_w_metric, w_metric = eval_watermark(reversed_latents_no_w, reversed_latents_w, watermarking_mask, gt_patch, args)
