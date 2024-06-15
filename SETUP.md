@@ -15,8 +15,3 @@ python ./run_tree_ring_watermark.py
 ```
 wandb login
 ```
-
-API Key - Rodrigo
-```
-441cbdbf8f7223f8ccee0a1e614672699efdaaf0
-```
