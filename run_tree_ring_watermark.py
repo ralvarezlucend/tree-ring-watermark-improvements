@@ -133,7 +133,7 @@ def main(args):
             prev_loss = float('inf')
             
             for j in range(max_epochs):
-                dec_image = latents_to_imgs(pipe, or_latents)
+                dec_image = latents_to_imgs(pipe, or_latents)[0]
                 dec_image = transform_img(dec_image).unsqueeze(0).to(or_image.dtype).to(device)
                 loss = torch.nn.functional.mse_loss(input=dec_image, target=or_image, reduction='sum')
                 cur_loss = loss.item()
