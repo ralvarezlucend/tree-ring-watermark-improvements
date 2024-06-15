@@ -1,5 +1,5 @@
 ### all cases
-python run_tree_ring_watermark.py --run_name no_attack_zeros_optimized_100 --w_channel 2 --w_pattern zeros --start 0 --end 100 --with_tracking --reference_model ViT-g-14 --reference_model_pretrain laion2b_s12b_b42k --optimize_latents
+# python run_tree_ring_watermark.py --run_name no_attack_zeros_optimized_100 --w_channel 2 --w_pattern zeros --start 0 --end 100 --with_tracking --reference_model ViT-g-14 --reference_model_pretrain laion2b_s12b_b42k --optimize_latents
 python run_tree_ring_watermark.py --run_name rotation_zeros_optimized_100 --w_channel 2 --w_pattern zeros --r_degree 75 --start 0 --end 100 --with_tracking --optimize_latents
 python run_tree_ring_watermark.py --run_name jpeg_zeros_optimized_100 --w_channel 2 --w_pattern zeros --jpeg_ratio 25 --start 0 --end 100 --with_tracking --optimize_latents
 python run_tree_ring_watermark.py --run_name cropping_zeros_optimized_100 --w_channel 2 --w_pattern zeros --crop_scale 0.75 --crop_ratio 0.75 --start 0 --end 100 --with_tracking --optimize_latents
