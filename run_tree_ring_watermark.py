@@ -105,6 +105,59 @@ def main(args):
         img_no_w = transform_img(orig_image_no_w_auged).unsqueeze(0).to(text_embeddings.dtype).to(device)
         image_latents_no_w = pipe.get_image_latents(img_no_w, sample=False)
 
+        # START CODE
+        def optimize_latents(or_latents, or_image, max_epochs, log_var_name):
+            """Optimize latents to minimize the loss between the original image and the decoded image.
+
+            Args:
+                or_latents (torch.tensor): Original latents.
+                or_image (torch.tensor): Original image.
+                max_epochs (int): Maximum number of iterations for the optimization. Defaults to 100.
+
+            Returns:
+                torch.tensor: optimized latents.
+            """
+            z = torch.tensor(or_latents.clone(), requires_grad=True, device=device)
+            optimizer = torch.optim.SGD([z], lr=0.001, momentum=0.9)
+            patience = 0
+            max_patience = 4
+            min_delta = 1 
+            cur_loss = 0
+            prev_loss = float('inf')
+            
+            for j in range(max_epochs):
+                dec_image = pipe.decode_image(z) # decoded image
+                loss = torch.nn.functional.mse_loss(or_image, dec_image, reduction='sum')
+                cur_loss = loss.item()
+                
+                # optimize latents
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                # early stopping
+                if cur_loss > prev_loss or abs(cur_loss - prev_loss) < min_delta:
+                    patience = patience + 1
+                else:
+                    patience = 0
+
+                if patience >= max_patience: 
+                    break   
+
+                prev_loss = cur_loss
+
+                if args.with_tracking:
+                    wandb.log({
+                        log_var_name: cur_loss,
+                        "iteration": j
+                    })
+
+            return z.detach()
+
+        if args.optimize_latents:
+            image_latents_no_w = optimize_latents(or_latents=image_latents_no_w, or_image=img_no_w, max_epochs=100, log_var_name=f'no_w_{i}_loss')
+        # END CODE
+
         reversed_latents_no_w = pipe.forward_diffusion(
             latents=image_latents_no_w,
             text_embeddings=text_embeddings,
@@ -115,6 +168,11 @@ def main(args):
         # reverse img with watermarking
         img_w = transform_img(orig_image_w_auged).unsqueeze(0).to(text_embeddings.dtype).to(device)
         image_latents_w = pipe.get_image_latents(img_w, sample=False)
+
+        # START CODE
+        if args.optimize_latents:
+            image_latents_w = optimize_latents(or_latents=image_latents_w, or_image=img_w, max_epochs=100, log_var_name=f'w_{i}_loss')
+        # END CODE
 
         reversed_latents_w = pipe.forward_diffusion(
             latents=image_latents_w,
@@ -188,6 +246,9 @@ if __name__ == '__main__':
     parser.add_argument('--reference_model_pretrain', default=None)
     parser.add_argument('--max_num_log_image', default=100, type=int)
     parser.add_argument('--gen_seed', default=0, type=int)
+    # START CODE
+    parser.add_argument('--optimize_latents', action='store_true')
+    # END CODE
 
     # watermark
     parser.add_argument('--w_seed', default=999999, type=int)

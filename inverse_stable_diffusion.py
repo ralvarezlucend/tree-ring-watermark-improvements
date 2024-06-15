@@ -185,7 +185,9 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
         return latents
 
     
-    @torch.inference_mode()
+    # START CODE
+    # @torch.inference_mode()
+    # END CODE
     def decode_image(self, latents: torch.FloatTensor, **kwargs):
         scaled_latents = 1 / 0.18215 * latents
         image = [
