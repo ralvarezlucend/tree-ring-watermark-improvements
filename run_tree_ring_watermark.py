@@ -106,9 +106,6 @@ def main(args):
         image_latents_no_w = pipe.get_image_latents(img_no_w, sample=False) 
 
         # START CODE
-        def scale_tensor_neg1_pos1(tensor):
-            return 2.0 * (tensor - tensor.min()) / (tensor.max() - tensor.min()) - 1.0
-
         def optimize_latents(or_latents, or_image, max_epochs, log_var_name):
             """Optimize latents to minimize the loss between the original image and the decoded image.
 
@@ -130,7 +127,6 @@ def main(args):
             
             for j in range(max_epochs):
                 dec_image = pipe.decode_image(z)
-                dec_image = scale_tensor_neg1_pos1(dec_image) # scale to [-1, 1]
                 loss = torch.nn.functional.mse_loss(dec_image, or_image, reduction='sum')
                 cur_loss = loss.item()
                 
