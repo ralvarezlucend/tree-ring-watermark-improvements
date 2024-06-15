@@ -44,6 +44,35 @@ def latents_to_imgs(pipe, latents):
     x = pipe.numpy_to_pil(x)
     return x
 
+def fourier_transform(image, radius_percent):
+    image_array = np.array(image)
+
+    rows, cols, channels = image_array.shape
+    crow, ccol = rows // 2, cols // 2
+
+    final_image = np.zeros((rows, cols, channels), dtype=np.uint8)
+    for i in range(channels):
+        f_shifted = np.fft.fftshift(np.fft.fft2(image_array[:, :, i]))
+        mask = np.zeros((rows, cols), dtype=np.uint8)
+        r_rows = int(rows * radius_percent/2)
+        r_cols = int(cols * radius_percent/2)
+
+        mask[crow-r_rows:crow+r_rows, ccol-r_cols:ccol+r_cols] = 1
+        f_shifted_filtered = f_shifted * mask
+
+        # magnitude_spectrum = np.log(np.abs(f_shifted))
+        # magnitude_spectrum_filtered = np.log(np.abs(f_shifted_filtered))
+
+        f_ishifted = np.fft.ifftshift(f_shifted_filtered)
+        img_back = np.fft.ifft2(f_ishifted)
+        img_back = np.abs(img_back)
+        img_back = (img_back - np.min(img_back)) / (np.max(img_back) - np.min(img_back)) * 255
+        img_back = img_back.astype(np.uint8)
+        final_image[:, :, i] = img_back
+
+    final_image_PIL = Image.fromarray(final_image)
+
+    return final_image_PIL
 
 def image_distortion(img1, img2, seed, args):
     if args.r_degree is not None:
@@ -76,6 +105,10 @@ def image_distortion(img1, img2, seed, args):
     if args.brightness_factor is not None:
         img1 = transforms.ColorJitter(brightness=args.brightness_factor)(img1)
         img2 = transforms.ColorJitter(brightness=args.brightness_factor)(img2)
+
+    if args.fourier_alteration is not None:
+        img1 = fourier_transform(img1, args.fourier_alteration)
+        img2 = fourier_transform(img2, args.fourier_alteration)
 
     return img1, img2
 

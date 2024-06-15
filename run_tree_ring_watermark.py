@@ -270,6 +270,9 @@ if __name__ == '__main__':
     parser.add_argument('--brightness_factor', default=None, type=float)
     parser.add_argument('--rand_aug', default=0, type=int)
 
+    parser.add_argument('--fourier_alteration', default=None, type = float) #added 
+
+
     args = parser.parse_args()
 
     if args.test_num_inference_steps is None:
