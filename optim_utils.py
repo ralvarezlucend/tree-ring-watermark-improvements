@@ -155,6 +155,24 @@ def circle_mask(size=64, r=10, x_offset=0, y_offset=0):
 
     return ((x - x0)**2 + (y-y0)**2)<= r**2
 
+def pie_mask(size=64, num_slices=6):
+    # Create a mask with the same size
+    mask = torch.zeros((size, size), dtype=torch.int64)
+    center = size // 2
+    angle_step = 2 * np.pi / num_slices
+    
+    for i in range(size):
+        for j in range(size):
+            y = i - center
+            x = j - center
+            angle = np.arctan2(y, x)
+            if angle < 0:
+                angle += 2 * np.pi
+            slice_index = int(angle // angle_step)
+            mask[i, j] = slice_index
+            
+    return mask
+
 
 def get_watermarking_mask(init_latents_w, args, device):
     watermarking_mask = torch.zeros(init_latents_w.shape, dtype=torch.bool).to(device)
@@ -222,6 +240,28 @@ def get_watermarking_pattern(pipe, args, device, shape=None):
             
             for j in range(gt_patch.shape[1]):
                 gt_patch[:, j, tmp_mask] = gt_patch_tmp[0, j, 0, i].item()
+
+    elif 'checkerboard' in args.w_pattern:
+        checkerboard = torch.zeros_like(gt_init)
+        checkerboard[::2, ::2] = 1
+        checkerboard[1::2, 1::2] = 1
+        gt_patch = checkerboard.to(device)
+
+    elif 'gradient' in args.w_pattern:
+        x = torch.linspace(0, 1, gt_init.shape[-1])
+        gradient = torch.outer(x, x).to(device)
+        gt_patch = gradient.expand_as(gt_init)
+
+    elif 'pie' in args.w_pattern:
+        num_slices = args.w_num_slices
+        mask = pie_mask(gt_init.shape[-1], num_slices).to(device)
+        gt_patch = torch.zeros_like(gt_init)
+        slice_patterns = [torch.randn_like(gt_init[:, :, 0, 0]) for _ in range(num_slices)]
+
+        for k in range(num_slices):
+            slice_mask = (mask == k)
+            for j in range(gt_patch.shape[1]):
+                gt_patch[:, j, slice_mask] = slice_patterns[k][:, j].expand_as(gt_patch[:, j, slice_mask])
 
     return gt_patch
 
