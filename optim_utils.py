@@ -245,12 +245,15 @@ def get_watermarking_pattern(pipe, args, device, shape=None):
         checkerboard = torch.zeros_like(gt_init)
         checkerboard[::2, ::2] = 1
         checkerboard[1::2, 1::2] = 1
-        gt_patch = checkerboard.to(device)
+        gt_patch = torch.fft.fftshift(torch.fft.fft2(checkerboard), dim=(-1, -2))
+        gt_patch[:] = gt_patch[0]
 
     elif 'gradient' in args.w_pattern:
         x = torch.linspace(0, 1, gt_init.shape[-1])
         gradient = torch.outer(x, x).to(device)
-        gt_patch = gradient.expand_as(gt_init)
+        gradient = gradient.expand_as(gt_init)
+        gt_patch = torch.fft.fftshift(torch.fft.fft2(gradient), dim=(-1, -2))
+        gt_patch[:] = gt_patch[0]
 
     elif 'pie' in args.w_pattern:
         num_slices = args.w_num_slices
@@ -262,6 +265,9 @@ def get_watermarking_pattern(pipe, args, device, shape=None):
             slice_mask = (mask == k)
             for j in range(gt_patch.shape[1]):
                 gt_patch[:, j, slice_mask] = slice_patterns[k][:, j].expand_as(gt_patch[:, j, slice_mask])
+
+        gt_patch = torch.fft.fftshift(torch.fft.fft2(gt_patch), dim=(-1, -2))
+        gt_patch[:] = gt_patch[0]
 
     return gt_patch
 
