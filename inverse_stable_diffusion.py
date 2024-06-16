@@ -184,11 +184,16 @@ class InversableStableDiffusionPipeline(ModifiedStableDiffusionPipeline):
             )
         return latents
 
-    
-    # START CODE
-    # @torch.inference_mode()
-    # END CODE
+    @torch.inference_mode()
     def decode_image(self, latents: torch.FloatTensor, **kwargs):
+        scaled_latents = 1 / 0.18215 * latents
+        image = [
+            self.vae.decode(scaled_latents[i : i + 1]).sample for i in range(len(latents))
+        ]
+        image = torch.cat(image, dim=0)
+        return image
+    
+    def decode_image_grad(self, latents: torch.FloatTensor, **kwargs):
         scaled_latents = 1 / 0.18215 * latents
         image = [
             self.vae.decode(scaled_latents[i : i + 1]).sample for i in range(len(latents))
