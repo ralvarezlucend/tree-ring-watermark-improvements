@@ -249,14 +249,14 @@ def get_watermarking_pattern(pipe, args, device, shape=None):
         gt_patch[:] = gt_patch[0]
 
     elif 'gradient' in args.w_pattern:
-        x = torch.linspace(0, 1, gt_init.shape[-1])
-        gradient = torch.outer(x, x).to(device)
-        gradient = gradient.expand_as(gt_init)
+        x = torch.linspace(0, 1, gt_init.shape[-1]).to(device)
+        gradient = torch.outer(x, x)
+        gradient = gradient.unsqueeze(0).unsqueeze(0).expand_as(gt_init)
         gt_patch = torch.fft.fftshift(torch.fft.fft2(gradient), dim=(-1, -2))
         gt_patch[:] = gt_patch[0]
 
     elif 'pie' in args.w_pattern:
-        num_slices = args.w_num_slices
+        num_slices = 6
         mask = pie_mask(gt_init.shape[-1], num_slices).to(device)
         gt_patch = torch.zeros_like(gt_init)
         slice_patterns = [torch.randn_like(gt_init[:, :, 0, 0]) for _ in range(num_slices)]
